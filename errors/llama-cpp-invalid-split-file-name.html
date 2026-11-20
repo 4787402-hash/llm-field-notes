@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>llama.cpp: error loading model: invalid split file name</title>
+<meta name="description" content="error loading model: invalid split file name - cause and verified fix.">
+<link rel="canonical" href="https://4787402-hash.github.io/llm-field-notes/errors/llama-cpp-invalid-split-file-name.html">
+<meta property="og:title" content="llama.cpp: error loading model: invalid split file name">
+<meta property="og:description" content="error loading model: invalid split file name - cause and verified fix.">
+<meta property="og:type" content="article">
+<style>
+:root{--bg:#fff;--fg:#101114;--muted:#5c6270;--line:#e4e6eb;--card:#f7f8fa;--accent:#2f6f4f;--code:#f2f3f5}
+@media (prefers-color-scheme:dark){
+:root{--bg:#0d0f12;--fg:#e8eaee;--muted:#9aa2b1;--line:#22262d;--card:#14181d;--accent:#5ac08a;--code:#171b21}
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--fg);
+ font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,
+ "PingFang SC","Microsoft YaHei",sans-serif;}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+.wrap{max-width:760px;margin:0 auto;padding:0 20px}
+header.site{border-bottom:1px solid var(--line);padding:18px 0;margin-bottom:40px}
+header.site .wrap{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+header.site b{font-size:17px;letter-spacing:-.01em}
+header.site span{color:var(--muted);font-size:13px}
+h1{font-size:30px;line-height:1.25;letter-spacing:-.02em;margin:0 0 10px}
+h2{font-size:20px;letter-spacing:-.01em;margin:38px 0 12px}
+p{margin:0 0 14px}
+.lede{color:var(--muted);font-size:17px;margin-bottom:34px}
+code{background:var(--code);padding:2px 5px;border-radius:4px;font-size:13.5px;
+ font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;word-break:break-word}
+pre{background:var(--code);padding:14px 16px;border-radius:8px;overflow-x:auto;margin:0 0 16px}
+pre code{background:none;padding:0;font-size:13px;line-height:1.55}
+ol,ul{margin:0 0 16px;padding-left:22px}
+li{margin-bottom:8px}
+.errbox{border-left:3px solid #d9534f;background:var(--card);padding:12px 16px;border-radius:0 8px 8px 0;
+ margin:0 0 22px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+ font-size:13px;line-height:1.5;overflow-x:auto;white-space:pre-wrap;word-break:break-word}
+.meta{color:var(--muted);font-size:13px;margin:0 0 22px}
+.meta b{color:var(--fg);font-weight:600}
+ul.list{list-style:none;padding:0;margin:0}
+ul.list li{border-top:1px solid var(--line);padding:14px 0;margin:0}
+ul.list li:last-child{border-bottom:1px solid var(--line)}
+ul.list a{font-weight:600;font-size:16px}
+ul.list .sub{color:var(--muted);font-size:13.5px;margin-top:3px;display:block;
+ font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+table{width:100%;border-collapse:collapse;margin:0 0 18px;font-size:14.5px}
+th,td{text-align:left;padding:9px 0;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--muted);font-weight:600;font-size:13px;text-transform:uppercase;letter-spacing:.04em}
+td:last-child{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tag{display:inline-block;font-size:12px;color:var(--muted);border:1px solid var(--line);
+ border-radius:999px;padding:1px 9px;margin:0 6px 6px 0}
+footer.site{border-top:1px solid var(--line);margin-top:60px;padding:26px 0 50px;
+ color:var(--muted);font-size:13px}
+footer.site a{color:var(--muted);text-decoration:underline}
+.verified{background:var(--card);border-radius:8px;padding:14px 16px;font-size:14px;
+ color:var(--muted);margin:0 0 8px}
+@media(max-width:600px){h1{font-size:25px}.wrap{padding:0 16px}}
+</style>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"llama.cpp: error loading model: invalid split file name","description":"error loading model: invalid split file name - cause and verified fix."}</script>
+</head>
+<body>
+<header class="site"><div class="wrap">
+<a href="../index.html"><b>Local AI Field Notes</b></a>
+<span>Errors reproduced on real hardware, with the fix that actually worked.</span>
+</div></header>
+<main class="wrap">
+<p class="meta"><a href="../index.html">&larr; All notes</a></p>
+<h1>llama.cpp: error loading model: invalid split file name</h1>
+<div class="errbox">error loading model: invalid split file name</div>
+<p class="meta"><b>Where:</b> llama.cpp / llama-server, any OS</p>
+
+<h2>What you see</h2>
+<p>You concatenated a multi-part GGUF (name-00001-of-00002.gguf + name-00002-of-00002.gguf) into a single file to keep things tidy. llama-server now refuses to load it.</p>
+
+<h2>Why it happens</h2>
+<p>A split GGUF stores split.count = N in its header. Concatenating the parts gives you the bytes of both files but the header still claims the model is split, so the loader goes looking for a second shard that is no longer there. The byte count is right; the metadata is lying.</p>
+
+<h2>Fix</h2>
+<ol><li>Do not concatenate. Delete the merged file and keep the original shards.</li><li>Point -m at the first shard only: <code>-m model-00001-of-00002.gguf</code>.</li><li>Keep every shard in the same directory with its original filename. The loader resolves the rest from split.no / split.count.</li></ol>
+
+<h2>Verification</h2>
+<div class="verified">Reproduced with Qwen2.5-7B-Instruct Q4_K_M split into two files (3,993,201,344 + 689,872,288 = 4,683,073,632 bytes). The merged file fails; pointing -m at shard 1 loads normally and reports the full parameter count.</div>
+<p><span class="tag">llama.cpp</span><span class="tag">gguf</span></p>
+
+</main>
+<footer class="site"><div class="wrap">
+<p>Every fix on this site was reproduced on real hardware before publication.
+Corrections welcome.</p>
+<p><a href="../index.html">All notes</a> · <a href="../benchmarks.html">Benchmarks</a></p>
+</div></footer>
+</body>
+</html>

@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Python: I/O operation on closed file after re-wrapping sys.stdout</title>
+<meta name="description" content="ValueError: I/O operation on closed file - cause and verified fix.">
+<link rel="canonical" href="https://4787402-hash.github.io/llm-field-notes/errors/python-textiowrapper-closed-file.html">
+<meta property="og:title" content="Python: I/O operation on closed file after re-wrapping sys.stdout">
+<meta property="og:description" content="ValueError: I/O operation on closed file - cause and verified fix.">
+<meta property="og:type" content="article">
+<style>
+:root{--bg:#fff;--fg:#101114;--muted:#5c6270;--line:#e4e6eb;--card:#f7f8fa;--accent:#2f6f4f;--code:#f2f3f5}
+@media (prefers-color-scheme:dark){
+:root{--bg:#0d0f12;--fg:#e8eaee;--muted:#9aa2b1;--line:#22262d;--card:#14181d;--accent:#5ac08a;--code:#171b21}
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--fg);
+ font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,
+ "PingFang SC","Microsoft YaHei",sans-serif;}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+.wrap{max-width:760px;margin:0 auto;padding:0 20px}
+header.site{border-bottom:1px solid var(--line);padding:18px 0;margin-bottom:40px}
+header.site .wrap{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+header.site b{font-size:17px;letter-spacing:-.01em}
+header.site span{color:var(--muted);font-size:13px}
+h1{font-size:30px;line-height:1.25;letter-spacing:-.02em;margin:0 0 10px}
+h2{font-size:20px;letter-spacing:-.01em;margin:38px 0 12px}
+p{margin:0 0 14px}
+.lede{color:var(--muted);font-size:17px;margin-bottom:34px}
+code{background:var(--code);padding:2px 5px;border-radius:4px;font-size:13.5px;
+ font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;word-break:break-word}
+pre{background:var(--code);padding:14px 16px;border-radius:8px;overflow-x:auto;margin:0 0 16px}
+pre code{background:none;padding:0;font-size:13px;line-height:1.55}
+ol,ul{margin:0 0 16px;padding-left:22px}
+li{margin-bottom:8px}
+.errbox{border-left:3px solid #d9534f;background:var(--card);padding:12px 16px;border-radius:0 8px 8px 0;
+ margin:0 0 22px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+ font-size:13px;line-height:1.5;overflow-x:auto;white-space:pre-wrap;word-break:break-word}
+.meta{color:var(--muted);font-size:13px;margin:0 0 22px}
+.meta b{color:var(--fg);font-weight:600}
+ul.list{list-style:none;padding:0;margin:0}
+ul.list li{border-top:1px solid var(--line);padding:14px 0;margin:0}
+ul.list li:last-child{border-bottom:1px solid var(--line)}
+ul.list a{font-weight:600;font-size:16px}
+ul.list .sub{color:var(--muted);font-size:13.5px;margin-top:3px;display:block;
+ font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+table{width:100%;border-collapse:collapse;margin:0 0 18px;font-size:14.5px}
+th,td{text-align:left;padding:9px 0;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--muted);font-weight:600;font-size:13px;text-transform:uppercase;letter-spacing:.04em}
+td:last-child{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tag{display:inline-block;font-size:12px;color:var(--muted);border:1px solid var(--line);
+ border-radius:999px;padding:1px 9px;margin:0 6px 6px 0}
+footer.site{border-top:1px solid var(--line);margin-top:60px;padding:26px 0 50px;
+ color:var(--muted);font-size:13px}
+footer.site a{color:var(--muted);text-decoration:underline}
+.verified{background:var(--card);border-radius:8px;padding:14px 16px;font-size:14px;
+ color:var(--muted);margin:0 0 8px}
+@media(max-width:600px){h1{font-size:25px}.wrap{padding:0 16px}}
+</style>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Python: I/O operation on closed file after re-wrapping sys.stdout","description":"ValueError: I/O operation on closed file - cause and verified fix."}</script>
+</head>
+<body>
+<header class="site"><div class="wrap">
+<a href="../index.html"><b>Local AI Field Notes</b></a>
+<span>Errors reproduced on real hardware, with the fix that actually worked.</span>
+</div></header>
+<main class="wrap">
+<p class="meta"><a href="../index.html">&larr; All notes</a></p>
+<h1>Python: I/O operation on closed file after re-wrapping sys.stdout</h1>
+<div class="errbox">ValueError: I/O operation on closed file</div>
+<p class="meta"><b>Where:</b> Python on Windows with a legacy console code page</p>
+
+<h2>What you see</h2>
+<p>You wrap sys.stdout twice to force UTF-8 output and later print fails, or the failure only appears when output is piped.</p>
+
+<h2>Why it happens</h2>
+<p>Assigning sys.stdout = io.TextIOWrapper(sys.stdout.buffer, ...) a second time drops the last reference to the first wrapper. When that object is collected it closes the underlying buffer, which the new wrapper is still using.</p>
+
+<h2>Fix</h2>
+<ol><li>Use <code>sys.stdout.reconfigure(encoding="utf-8", errors="replace")</code> - no new object, no close.</li><li>Set <code>PYTHONIOENCODING=utf-8</code> in the environment instead of touching sys.stdout at all.</li></ol>
+
+<h2>Verification</h2>
+<div class="verified">Verified on Python 3.12.10 / Windows 11 zh-CN. reconfigure() prints CJK and emoji without error.</div>
+<p><span class="tag">python</span><span class="tag">windows</span><span class="tag">encoding</span></p>
+
+</main>
+<footer class="site"><div class="wrap">
+<p>Every fix on this site was reproduced on real hardware before publication.
+Corrections welcome.</p>
+<p><a href="../index.html">All notes</a> · <a href="../benchmarks.html">Benchmarks</a></p>
+</div></footer>
+</body>
+</html>

@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Local AI Field Notes - errors, fixes and real benchmarks</title>
+<meta name="description" content="Exact error messages from llama.cpp, LiteLLM, Codex, mihomo, OpenClash and Python on Windows, each with the root cause and a fix verified on real hardware.">
+<link rel="canonical" href="https://4787402-hash.github.io/llm-field-notes/index.html">
+<meta property="og:title" content="Local AI Field Notes - errors, fixes and real benchmarks">
+<meta property="og:description" content="Exact error messages from llama.cpp, LiteLLM, Codex, mihomo, OpenClash and Python on Windows, each with the root cause and a fix verified on real hardware.">
+<meta property="og:type" content="article">
+<style>
+:root{--bg:#fff;--fg:#101114;--muted:#5c6270;--line:#e4e6eb;--card:#f7f8fa;--accent:#2f6f4f;--code:#f2f3f5}
+@media (prefers-color-scheme:dark){
+:root{--bg:#0d0f12;--fg:#e8eaee;--muted:#9aa2b1;--line:#22262d;--card:#14181d;--accent:#5ac08a;--code:#171b21}
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--fg);
+ font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,
+ "PingFang SC","Microsoft YaHei",sans-serif;}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+.wrap{max-width:760px;margin:0 auto;padding:0 20px}
+header.site{border-bottom:1px solid var(--line);padding:18px 0;margin-bottom:40px}
+header.site .wrap{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+header.site b{font-size:17px;letter-spacing:-.01em}
+header.site span{color:var(--muted);font-size:13px}
+h1{font-size:30px;line-height:1.25;letter-spacing:-.02em;margin:0 0 10px}
+h2{font-size:20px;letter-spacing:-.01em;margin:38px 0 12px}
+p{margin:0 0 14px}
+.lede{color:var(--muted);font-size:17px;margin-bottom:34px}
+code{background:var(--code);padding:2px 5px;border-radius:4px;font-size:13.5px;
+ font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;word-break:break-word}
+pre{background:var(--code);padding:14px 16px;border-radius:8px;overflow-x:auto;margin:0 0 16px}
+pre code{background:none;padding:0;font-size:13px;line-height:1.55}
+ol,ul{margin:0 0 16px;padding-left:22px}
+li{margin-bottom:8px}
+.errbox{border-left:3px solid #d9534f;background:var(--card);padding:12px 16px;border-radius:0 8px 8px 0;
+ margin:0 0 22px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+ font-size:13px;line-height:1.5;overflow-x:auto;white-space:pre-wrap;word-break:break-word}
+.meta{color:var(--muted);font-size:13px;margin:0 0 22px}
+.meta b{color:var(--fg);font-weight:600}
+ul.list{list-style:none;padding:0;margin:0}
+ul.list li{border-top:1px solid var(--line);padding:14px 0;margin:0}
+ul.list li:last-child{border-bottom:1px solid var(--line)}
+ul.list a{font-weight:600;font-size:16px}
+ul.list .sub{color:var(--muted);font-size:13.5px;margin-top:3px;display:block;
+ font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+table{width:100%;border-collapse:collapse;margin:0 0 18px;font-size:14.5px}
+th,td{text-align:left;padding:9px 0;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--muted);font-weight:600;font-size:13px;text-transform:uppercase;letter-spacing:.04em}
+td:last-child{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tag{display:inline-block;font-size:12px;color:var(--muted);border:1px solid var(--line);
+ border-radius:999px;padding:1px 9px;margin:0 6px 6px 0}
+footer.site{border-top:1px solid var(--line);margin-top:60px;padding:26px 0 50px;
+ color:var(--muted);font-size:13px}
+footer.site a{color:var(--muted);text-decoration:underline}
+.verified{background:var(--card);border-radius:8px;padding:14px 16px;font-size:14px;
+ color:var(--muted);margin:0 0 8px}
+@media(max-width:600px){h1{font-size:25px}.wrap{padding:0 16px}}
+</style>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","headline":"Local AI Field Notes - errors, fixes and real benchmarks","description":"Exact error messages from llama.cpp, LiteLLM, Codex, mihomo, OpenClash and Python on Windows, each with the root cause and a fix verified on real hardware."}</script>
+</head>
+<body>
+<header class="site"><div class="wrap">
+<a href="index.html"><b>Local AI Field Notes</b></a>
+<span>Errors reproduced on real hardware, with the fix that actually worked.</span>
+</div></header>
+<main class="wrap">
+<h1>Local AI, debugged on real hardware</h1>
+<p class="lede">Exact error strings, why they happen, and the fix that worked - each one
+reproduced before it was written down. No padding, no "have you tried reinstalling".</p>
+
+<h2>Errors and fixes</h2>
+<ul class="list">
+<li><a href="errors/llama-cpp-invalid-split-file-name.html">llama.cpp: error loading model: invalid split file name</a><span class="sub">error loading model: invalid split file name</span></li><li><a href="errors/codex-wire-api-chat-not-supported.html">Codex: `wire_api = "chat"` is no longer supported</a><span class="sub">`wire_api = "chat"` is no longer supported</span></li><li><a href="errors/mihomo-invalid-find-process-mode.html">mihomo / OpenClash: Parse config error: invalid find process mode</a><span class="sub">level=fatal msg="Parse config error: invalid find process mode"</span></li><li><a href="errors/litellm-context-window-exceeded.html">LiteLLM: request exceeds the available context size</a><span class="sub">litellm.ContextWindowExceededError: This model's maximum context length is 8192 tokens. However, your messages</span></li><li><a href="errors/litellm-no-module-main.html">LiteLLM: No module named litellm.__main__</a><span class="sub">No module named litellm.__main__; 'litellm' is a package and cannot be directly executed</span></li><li><a href="errors/pyyaml-gbk-unicode-decode-error.html">PyYAML: 'gbk' codec can't decode byte 0x94</a><span class="sub">UnicodeDecodeError: 'gbk' codec can't decode byte 0x94 in position 18: illegal multibyte sequence</span></li><li><a href="errors/mihomo-url-regex-unsupported.html">mihomo: unsupported rule type: URL-REGEX</a><span class="sub">parse classical rule [URL-REGEX,...] error: unsupported rule type: URL-REGEX</span></li><li><a href="errors/mihomo-dns-resolve-failed-deadline.html">mihomo: dns resolve failed: context deadline exceeded</a><span class="sub">dns resolve failed: context deadline exceeded</span></li><li><a href="errors/powershell-missing-equals-operator.html">PowerShell: Missing '=' operator after key in hash literal</a><span class="sub">Missing '=' operator after key in hash literal.</span></li><li><a href="errors/powershell-writealltext-parameter-count-4.html">PowerShell: WriteAllText 的重载，参数计数为 4</a><span class="sub">找不到“WriteAllText”的重载，参数计数为“4”。</span></li><li><a href="errors/python-win32-globallock-access-violation.html">ctypes: OSError access violation writing 0x0 when setting the clipboard</a><span class="sub">OSError: exception: access violation writing 0x0</span></li><li><a href="errors/albion-api-throttled-use-compression.html">Albion Online Data API: Throttled, be nice to the server, use compression</a><span class="sub">Throttled, be nice to the server, use compression</span></li><li><a href="errors/urllib-incompleteread-github-api.html">Python urllib: IncompleteRead on large GitHub API responses</a><span class="sub">http.client.IncompleteRead: IncompleteRead(1234567 bytes read, 89012 more expected)</span></li><li><a href="errors/python-textiowrapper-closed-file.html">Python: I/O operation on closed file after re-wrapping sys.stdout</a><span class="sub">ValueError: I/O operation on closed file</span></li>
+</ul>
+
+<h2>Measured, not guessed</h2>
+<p>The benchmark numbers behind these notes come from a single machine: AMD RX 6700 XT 12&nbsp;GB,
+Ryzen 5 5600G, 16&nbsp;GB RAM, llama.cpp Vulkan backend, Qwen2.5 7B at Q4_K_M.</p>
+<ul class="list">
+<li><a href="benchmarks.html">Full benchmark table</a>
+<span class="sub">prefill, generation, KV quantization, context growth</span></li>
+<li><a href="notes/kv-cache-quantization-on-vulkan.html">Do not enable KV cache quantization on the Vulkan backend</a></li><li><a href="notes/prefill-is-not-linear.html">Prefill time is quadratic, and it dominates agent workloads</a></li>
+</ul>
+
+</main>
+<footer class="site"><div class="wrap">
+<p>Every fix on this site was reproduced on real hardware before publication.
+Corrections welcome.</p>
+<p><a href="index.html">All notes</a> · <a href="benchmarks.html">Benchmarks</a></p>
+</div></footer>
+</body>
+</html>
