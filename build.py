@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """Static site generator. Run: python build.py"""
 import html
 import os
@@ -238,7 +238,7 @@ def main():
         write(os.path.join(OUT, "notes", n["slug"] + ".html"), build_note(n))
         slug_list.append("notes/" + n["slug"] + ".html")
 
-    write(os.path.join(OUT, "sitemap.xml"), build_sitemap(slug_list))
+    write(os.path.join(OUT, "sitemap.xml"), build_sitemap(sorted(set(slug_list))))
     write(os.path.join(OUT, "robots.txt"),
           "User-agent: *\nAllow: /\nSitemap: %s/sitemap.xml\n" % data.SITE["base"])
     write(os.path.join(OUT, ".nojekyll"), "")
