@@ -393,21 +393,38 @@ ERRORS = [
             "refuses connections. The runtime config file is 16 bytes."
         ),
         "cause": (
-            "If the target config is missing, OpenClash takes a shortcut path that "
-            "skips the whole modify step and hands mihomo an almost empty file. mihomo "
-            "happily starts with defaults, so nothing looks broken until you try the API."
+            "OpenClash decides between a full rebuild and a shortcut in "
+            "<code>check_run_quick()</code>. It sets <code>quick_start=true</code> and returns "
+            "early when both <code>/tmp/openclash.change</code> and "
+            "<code>/tmp/openclash_config.tmp</code> exist and "
+            "<code>/etc/config/openclash</code> still matches the copy in that tmp file. "
+            "Only when one of those markers is missing does it fall through to "
+            "<code>quick_start=false</code> and actually run Step 3. Deleting the runtime "
+            "config alone changes nothing, because the markers still say &quot;nothing "
+            "changed&quot;. The 16-byte file is the whole shortcut output."
         ),
         "fix": [
-            "Force the full path: <code>touch /etc/config/openclash</code>",
-            "<code>uci set openclash.config.restart=1 &amp;&amp; uci commit openclash</code>",
-            "Restart, then confirm the log says <code>Step 3: Modify The Config File</code> and the file is hundreds of KB, not 16 bytes.",
-            "Check a port with <code>netstat -lntp | grep -E '7890|9090'</code> before blaming the rules.",
+            "Delete the two markers, not just the config: "
+            "<code>rm -f /tmp/openclash.change /tmp/openclash_config.tmp /etc/openclash/free.yaml</code>",
+            "Restart: <code>/etc/init.d/openclash restart</code>",
+            "Poll for the regenerate instead of sleeping a fixed time, because it takes "
+            "6-45 s depending on how many GeoSite records load: "
+            "<code>while [ $(wc -c &lt; /etc/openclash/free.yaml) -lt 2500 ]; do sleep 1; done</code>",
+            "Confirm the log line you want is <code>Step 3: Modify The Config File...</code>. "
+            "If you still see <code>Quick Start Mode</code>, the markers came back - delete them again "
+            "in the same shell command as the restart.",
+            "Do not use <code>touch /etc/config/openclash</code> or "
+            "<code>uci set openclash.config.restart=1</code> as the fix. Both were tried and both "
+            "left the runtime config at 16 bytes, because <code>uci commit</code> rewrites the tmp "
+            "copy that the comparison uses."
         ],
         "verify": (
-            "Reproduced on LibWrt (OpenWrt SNAPSHOT, aarch64) with OpenClash 0.47. "
-            "Deleting the runtime config and restarting produced a 16-byte file and a "
-            "closed 9090. After touching /etc/config/openclash and setting restart=1, "
-            "OpenClash wrote a 587 KB runtime config and both ports listened."
+            "Reproduced on LibWrt (OpenWrt SNAPSHOT, aarch64, mihomo alpha-gbc76c13) with "
+            "OpenClash 0.47. Full pool: deleting the markers produced a 579,970-byte runtime "
+            "config in 41 s and both 7890 and 9090 listened. Trimmed pool (25 nodes, "
+            "url-test group): 6,679 bytes in 6 s. Without deleting the markers the same "
+            "commands produced a 16-byte file every time, and the router had no outbound "
+            "connectivity until the markers were removed."
         ),
         "tags": ["openclash", "mihomo", "openwrt"],
     },
