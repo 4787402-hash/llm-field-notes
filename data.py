@@ -323,6 +323,94 @@ ERRORS = [
         "verify": "Verified on Python 3.12.10 / Windows 11 zh-CN. reconfigure() prints CJK and emoji without error.",
         "tags": ["python", "windows", "encoding"],
     },
+
+    {
+        "slug": "codex-model-providers-openai-invalid-data",
+        "title": "Codex: config could not be loaded when you define [model_providers.openai]",
+        "err": "error loading config: invalid data  (model_providers.openai)",
+        "stack": "codex 0.170+, config.toml",
+        "symptom": (
+            "You point Codex at your own endpoint by adding a [model_providers.openai] "
+            "table to ~/.codex/config.toml. Every command now dies with "
+            "&quot;config could not be loaded&quot; and no further detail."
+        ),
+        "cause": (
+            "openai is a built-in provider id. Redeclaring it collides with the "
+            "internal definition, and the TOML merge fails before any of your values "
+            "are read. The error names the file, not the key, which is why it looks "
+            "like a syntax problem."
+        ),
+        "fix": [
+            "Rename the table to something that is not reserved: <code>[model_providers.relay]</code>.",
+            "Point <code>model_provider = &quot;relay&quot;</code> at it, and keep the same base_url / env_key / wire_api inside.",
+            "reserved ids to avoid: openai, anthropic, gemini, ollama, lmstudio.",
+            "Re-run <code>codex doctor</code>; it prints the parsed provider and model it actually loaded.",
+        ],
+        "verify": (
+            "Reproduced on codex 0.170.0 on Windows 11. With [model_providers.openai] "
+            "present: config could not be loaded. After renaming to [model_providers.relay] "
+            "and setting model_provider = &quot;relay&quot;, codex doctor reported config parse ok "
+            "and the model resolved against the local endpoint."
+        ),
+        "tags": ["codex", "config", "toml"],
+    },
+    {
+        "slug": "gemini-cli-please-set-an-auth-method",
+        "title": "Gemini CLI: Please set an Auth method in your settings.json",
+        "err": "Please set an Auth method in your /path/to/.gemini/settings.json",
+        "stack": "gemini-cli 0.69+, ~/.gemini/settings.json",
+        "symptom": (
+            "You already set the auth type, and the CLI still refuses to start and "
+            "asks for an auth method. The key you wrote is silently ignored."
+        ),
+        "cause": (
+            "The setting is nested: <code>security.auth.selectedType</code>. A top-level "
+            "&quot;selectedAuthType&quot; is accepted by the parser and discarded by the code. "
+            "Separately, choosing the browser flow rewrites the value to "
+            "oauth-personal, which is why it flips back after one successful login."
+        ),
+        "fix": [
+            "Write the nested form: <code>{&quot;security&quot;:{&quot;auth&quot;:{&quot;selectedType&quot;:&quot;gemini-api-key&quot;}}}</code>.",
+            "Export GEMINI_API_KEY in the same shell you launch from.",
+            "If it keeps reverting to oauth-personal, stop using the interactive login once; the file is being rewritten on exit.",
+            "For a proxy endpoint, set GOOGLE_GEMINI_BASE_URL and keep selectedType at gemini-api-key.",
+        ],
+        "verify": (
+            "Reproduced on gemini-cli 0.69.0. With the flat key the CLI printed "
+            "&quot;Please set an Auth method&quot;. With the nested key it read the API key and "
+            "returned a completion against a local LiteLLM endpoint."
+        ),
+        "tags": ["gemini-cli", "auth", "config"],
+    },
+    {
+        "slug": "openclash-quick-start-empty-config",
+        "title": "OpenClash: Quick Start Mode skips config generation and the API port never opens",
+        "err": "Step 3: Quick Start Mode, Skip Modify The Config File...",
+        "stack": "OpenClash + mihomo on OpenWrt, aarch64",
+        "symptom": (
+            "You delete the generated runtime config to force a clean rebuild, restart, "
+            "and mihomo comes up on 127.0.0.1:7890 but port 9090 (external-controller) "
+            "refuses connections. The runtime config file is 16 bytes."
+        ),
+        "cause": (
+            "If the target config is missing, OpenClash takes a shortcut path that "
+            "skips the whole modify step and hands mihomo an almost empty file. mihomo "
+            "happily starts with defaults, so nothing looks broken until you try the API."
+        ),
+        "fix": [
+            "Force the full path: <code>touch /etc/config/openclash</code>",
+            "<code>uci set openclash.config.restart=1 &amp;&amp; uci commit openclash</code>",
+            "Restart, then confirm the log says <code>Step 3: Modify The Config File</code> and the file is hundreds of KB, not 16 bytes.",
+            "Check a port with <code>netstat -lntp | grep -E '7890|9090'</code> before blaming the rules.",
+        ],
+        "verify": (
+            "Reproduced on LibWrt (OpenWrt SNAPSHOT, aarch64) with OpenClash 0.47. "
+            "Deleting the runtime config and restarting produced a 16-byte file and a "
+            "closed 9090. After touching /etc/config/openclash and setting restart=1, "
+            "OpenClash wrote a 587 KB runtime config and both ports listened."
+        ),
+        "tags": ["openclash", "mihomo", "openwrt"],
+    },
 ]
 
 BENCH_NOTES = [
